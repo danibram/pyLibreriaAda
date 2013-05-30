@@ -410,9 +410,9 @@ for i,fichero in enumerate(ficheros):
 	#print childs
 	#contours_met1(parents)
 
-	#dst = cv2.resize(contours,dsize=(1600,2000),interpolation=cv.CV_INTER_LINEAR)
-	#cv2.imshow('img',dst)
-	#cv2.waitKey(0)
-	#cv2.destroyAllWindows()
+	dst = cv2.resize(s,dsize=(1600,2000),interpolation=cv.CV_INTER_LINEAR)
+	cv2.imshow('img',dst)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 
 

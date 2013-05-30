@@ -3,16 +3,28 @@ import cv2
 import cv2.cv as cv
 import os
 import re #RegEx
-import pprint #Debug
 
 ## Carga de archivos
-folder = "albaranes2"
-# List files in "albaranes" folder
-ficheros = os.listdir(folder) 
+def get_image_array():
+	folder = "albaranes2"
+	# List files in "albaranes" folder
+	ficheros = os.listdir(folder) 
+	print ficheros
+	imarray = []
+	for col,indice in enumerate(ficheros):
+		ruta = folder+"/"+ficheros[col]
+		image1=cv2.imread(ruta)
+		print "Cargando %s"%ruta
+		height1,width1,channel1=image1.shape
+		print image1.shape
+		cvmat_image=cv.fromarray(image1)
+		iplimage =cv.GetImage(cvmat_image)
+		print iplimage
+		imarray.append(iplimage)
+	return imarray
 
-print ficheros
 api = tesseract.TessBaseAPI()
-api.Init(".","spa",tesseract.OEM_DEFAULT)
+api.Init(".","tmp3",tesseract.OEM_DEFAULT)
 #############################################################
 #api.SetVariable("global_tessdata_manager_debug_level","True")		#Increase verbosity (Debug)
 api.SetVariable("global_load_punc_dawg","False")					#Ignore punctuation patterns
@@ -23,6 +35,7 @@ api.SetVariable("language_model_penalty_non_freq_dict_word","0.2") 	#Penalty for
 #api.SetVariable()
 api.SetPageSegMode(tesseract.PSM_SINGLE_BLOCK)
 """
+Opciones de SetPageSegMode
 PSM_OSD_ONLY 				Orientation and script detection only.
 PSM_AUTO_OSD 				Automatic page segmentation with orientation and script detection. (OSD)
 PSM_AUTO_ONLY 				Automatic page segmentation, but no OSD, or OCR.
@@ -35,62 +48,55 @@ PSM_SINGLE_WORD 			Treat the image as a single word.
 PSM_CIRCLE_WORD 			Treat the image as a single word in a circle.
 PSM_SINGLE_CHAR 			Treat the image as a single character.
 PSM_COUNT 					Number of enum entries.
-
-arrcol = [
-	'cantidad',
-	'nombre',
-	'aparicion',
-	'aparicion2']
 """
+arresc = [3,17,20]		#Se necesita para cada albaran, posicion de los escandallos
 
-arrcol = [
-	['v'  			,0],
-	['cantidad'     ,2],
-	['nombre'       ,0],
-	['aparicion'    ,0],
-	['iva'          ,1],
-	['req'          ,1],
-	['pvp iva'      ,0],
-	['imp s/iva'    ,1],
-	['desc'         ,1],
-	['neto'         ,1],
-	['aparicion2'   ,2],
-	['codigo'       ,2]]
-arrcod = []
-datos = []
-dato = []
+#Nombre, parametro hueco, formato tabla
+arrcol  = [
+	['v'			,0,  2],	#0
+	['c'			,2,  3],	#1
+	['nombre'		,0, 20],	#2
+	['num'			,0,  8],	#3
+	['iva'			,1,  8],	#4
+	['req'			,1,  8],	#5
+	['pvp'			,0,  8],	#6
+	['s/iva'		,1,  8],	#7
+	['desc'			,1,  8],	#8
+	['neto'			,1,  8],	#9
+	['num'			,2,  8],	#10
+	['codigo'		,2, 10]]	#11
 
-arresc = [3,17,20]
-for col,indice in enumerate(ficheros):
-	ruta = folder+"/"+ficheros[col]
-	image1=cv2.imread(ruta)
-	print "Cargando %s"%ruta
-	"""
-	#### you may need to thicken the border in order to make tesseract feel happy to ocr your image #####
-	offset=20
-	height,width,channel = image0.shape
-	image1=cv2.copyMakeBorder(image0,offset,offset,offset,offset,cv2.BORDER_CONSTANT,value=(255,255,255)) 
-	# cv2.namedWindow("Test")
-	# cv2.imshow("Test", image1)
-	# cv2.waitKey(0)
-	# cv2.destroyWindow("Test")
-	#####################################################################################################
-	"""
+datos   = []			#Matriz revistas
+dato    = []			#Lista auxiliar
+arrescs = []			#Matriz escandallos
 
-	height1,width1,channel1=image1.shape
-	print image1.shape
-#	print image1.dtype.itemsize
-#	width_step = width1*image1.dtype.itemsize
-#	print width_step
-#	method 2
-	cvmat_image=cv.fromarray(image1)
-	iplimage =cv.GetImage(cvmat_image)
-	print iplimage
+imarray = get_image_array()
+#############################################################
+##OCR
+#############################################################
+
+api = tesseract.TessBaseAPI()
+api.Init(".","tmp3",tesseract.OEM_DEFAULT)
+#############################################################
+#api.SetVariable("global_tessdata_manager_debug_level","True")		#Increase verbosity (Debug)
+api.SetVariable("global_load_punc_dawg","False")					#Ignore punctuation patterns
+#api.SetVariable("global_load_number_dawg","False")					#Ignore number patterns
+api.SetVariable("language_model_penalty_non_freq_dict_word","0.2") 	#Penalty for words not in the frequent word dictionary(0.1 Default)
+#api.SetVariable()
+#api.SetVariable()
+#api.SetVariable()
+api.SetPageSegMode(tesseract.PSM_SINGLE_BLOCK)
+
+for col,iplimage in enumerate(imarray):
+
+	#############################################################
+	##OCR
+	#############################################################
 
 	tesseract.SetCvImage(iplimage,api)
 	#api.SetImage(m_any,width,height,channel1)
-	text=api.GetUTF8Text()
-	conf=api.MeanTextConf()
+	text=api.GetUTF8Text() # easy gg wp :D
+	#conf=api.MeanTextConf()
 	image=None
 	api.Clear()
 
@@ -104,18 +110,24 @@ for col,indice in enumerate(ficheros):
 	text = text[:-1]					#Remove last char (\n) OCR returns
 	text = text.replace('l','1') 		#Misses so often...
 	text = text.upper()
+	print text
+	if col == 0:
+		dato = map(int, text.split())
+	elif col == 2:
+		dato = text.split('\n')
+		if len(dato) > 15
+			print 'Problema '
 
-	if col <= 1:
-		dato = text.split()
-		if col == 1:					#Eliminamos los huecos :)
-			for esc in reversed(arresc):
-				del dato[esc-3:esc-1]
-		dato = map(int, dato)
-		
-	elif col==3:
+	elif col == 3:
+		text = text.replace(' ', '')
 		dato = map(int, text.split('\n'))
 
-	elif col==10:
+	elif col > 3 and col < 10:
+		text = text.replace(',', '.')
+		text = text.replace(' ', '') 	#Espacios fuera
+		dato = map(float, text.split('\n'))
+
+	elif col= = 10:						#La ultima sub-tabla necesita un trato especial
 		text = text.replace('O', '0')
 		text = re.sub(r'[^\d\n ]','',text)
 		text = text.replace(' 0 ',',')
@@ -132,38 +144,55 @@ for col,indice in enumerate(ficheros):
 		dato = text.split('\n')
 	dato.insert(0,arrcol[col][0])
 	datos.append(dato)
-	#print dato
-	print ".................................................................."
+	del text
+
+#print "Cerramos tesseract, liberamos..."
+#api.End() #Terminamos con el OCR
+#del api
+
 temp.insert(0,'codigo')
 datos.append(temp)
 
-for esc in arresc:
+for j, esc in enumerate(arresc):
 	for i in range(len((datos))):
-		if arrcol[i][1] == 1: datos[i].insert(esc,'')
-		if arrcol[i][1] == 2: datos[i].insert(esc-2,''); datos[i].insert(esc-2,'')
-
-
-"""
-	if done:
-		print "..............."
-		print arrcol[col](0)+" procesado:\n\n%s\n\n"%text
-#	print "Cofidence Level: %d %%"%conf
-"""
-print '\n'
-for i in datos:
-		print len(i),
-		print i
-
-
+		if arrcol[i][1] == 1: datos[i].insert(esc, '')
+		elif arrcol[i][1] == 2: 
+			copia = datos[i][esc-2] if  i == 10 or i == 11 else ''
+			datos[i].insert(esc-2, copia); datos[i].insert(esc-2, copia)
 print '\n\n'
+#Calculamos las sumas de datos
+suma = {}
 
-#Python es maravilloso
-datos = map(list, zip(*datos))
-for fila in datos:
-	print ''.join(str(e).rjust(20) for e in fila)
 
-print '\n\n'
+#Python es maravilloso, transponemos la tabla
+datos = zip(*datos)
+
+#Movemos los escandallos a arresc
+for i,esc in enumerate(arresc):
+	arrescs.append(datos.pop(esc-2-2*i))
+	arrescs.append(datos.pop(esc-2-2*i))
+
+#Imprimimos las matrices
+print '..............\n# Revistas:'
+for i,fila in enumerate(datos):
+	print str(i).ljust(3),
+	try:
+		print ''.join(str(e).decode('utf-8').rjust(arrcol[j][2]) for j,e in enumerate(fila))
+	except :
+		print ''.join(str(e).rjust(arrcol[j][2]) for j,e in enumerate(fila))
+		
+
+print '..............\n# Escandallos:'
+for i,fila in enumerate(arrescs):
+	print str(i).ljust(3),
+	try:
+		print ''.join(str(e).decode('utf-8').rjust(arrcol[j][2]) for j,e in enumerate(fila))
+	except :
+		print ''.join(str(e).rjust(arrcol[j][2]) for j,e in enumerate(fila))
+
 #raw_input("Press Enter to continue...")
+
+
 """
 Cargamos lista de imagenes
 Bucle de Procesamiento
